@@ -6,3 +6,6 @@ __pycache__/
 *.db
 .env
 .vscode/
+*.spec
+dist/
+build/

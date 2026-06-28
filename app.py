@@ -38,6 +38,7 @@ def init_db():
             position integer DEFAULT 0,
             notes TEXT,
             color TEXT,
+            folded integer DEFAULT 0,
             FOREIGN KEY(parent_id) REFERENCES tasks(id)
         )
     """)
@@ -77,7 +78,7 @@ def get_tasks():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT id, parent_id, title, done, position, notes, color 
+        SELECT id, parent_id, title, done, position, notes, color, folded
         FROM tasks 
         ORDER BY parent_id, position
     """)
@@ -93,6 +94,7 @@ def get_tasks():
         "position": r[4],
         "notes": r[5],
         "color": r[6],
+        "folded": r[7],
         "children": []
         }
     for r in rows
@@ -334,6 +336,23 @@ def unset_done_ancestors():
     conn.commit()
 
     return jsonify({"status": "ok"})
+
+@app.route("/update_fold_state", methods=["POST"])
+def update_fold_state():
+    data = request.json
+    task_id = data.get("id")
+    folded = 1 if data.get("folded") else 0
+
+    conn = get_db()
+    conn.execute("""
+        UPDATE tasks
+        SET folded = ?
+        WHERE id = ?
+    """, (folded,task_id)
+    )
+    conn.commit()
+
+    return jsonify({"status": "OK"})
 
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000")

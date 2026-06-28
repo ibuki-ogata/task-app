@@ -1,0 +1,8 @@
+_old/
+db/
+__pycache__/
+*.pyc
+*.sqlite3
+*.db
+.env
+.vscode/

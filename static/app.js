@@ -1,5 +1,4 @@
 const API_URL = "http://127.0.0.1:5000";
-let taskFoldState = {};
 let lastFocusedAddInputId = null;
 
 document.getElementById("rootTaskAddBtn").onclick = () => {
@@ -97,7 +96,6 @@ function startEditTask(task) {
     if (newTitle === null || newTitle.trim() === "") {
         return;
     }
-
     updateTaskTitle(task.id, newTitle);
 }
 
@@ -247,7 +245,7 @@ function renderTask(task, parentColor = null, container) {
     });
 
     // 折り畳み
-    toggleBtn.onclick = () => {
+    toggleBtn.onclick = async () => {
         const willShow = subList.style.display === "none";
         subList.style.display = willShow ? "block" : "none";
         
@@ -258,7 +256,21 @@ function renderTask(task, parentColor = null, container) {
             // 折りたたんだら追加欄は削除
             toggleBtn.classList.remove("open");
         }
-        taskFoldState[task.id] = willShow;
+
+        // 折り畳み状態の変数とその更新処理
+        const isFolded = subList.style.display === "none" ? true : false;
+        await fetch("/update_fold_state", {
+            method: "POST",
+            headers: { "Content-Type": "application/json"},
+            body: JSON.stringify({ id: task.id, folded: isFolded})
+        });
+
+        if (isFolded === true) {
+            subList.style.display = "none";
+        } else {
+            subList.style.display = "block";
+        }
+        await loadTasks();
     };
 
     // フォーカスが当たったときにその入力欄の番号を覚えておく
@@ -345,17 +357,6 @@ function renderTask(task, parentColor = null, container) {
         return task.color || parentColor || "transparent";
     }
 
-    if (taskFoldState[task.id] === undefined) {
-        taskFoldState[task.id] = true;
-    }
-
-    if (taskFoldState[task.id]) {
-        subList.style.display = "block";
-        toggleBtn.classList.add("open");
-    } else {
-        subList.style.display = "none";
-    }
-
     li.appendChild(taskHeader);
     li.appendChild(subList);
 
@@ -364,14 +365,20 @@ function renderTask(task, parentColor = null, container) {
     // 子タスクを再帰的に描画
     task.children.forEach(child => renderTask(child, color, subList));
 
+    if (task.folded) {
+        subList.style.display = "none";
+        toggleBtn.classList.remove("open");
+    } else {
+        subList.style.display = "block";
+        toggleBtn.classList.add("open");
+    }
+
     // タスク追加処理を共通関数化
     async function addChildTask() {
         const title = addInput.value.trim();
         if (!title) {
             return;
         }
-        // addTaskで再描画される前に折り畳みを更新しておく
-        taskFoldState[task.id] = true;
         // タスクを追加し再描画
         await addTask(task.id, title);
         addInput.value = "";

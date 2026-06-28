@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Task List</title>
+  <link rel="stylesheet" href="..\static\style.css">
+  <script src="..\static\Sortable.min.js"></script>
+</head>
+<body>
+  <h1>Task List</h1>
+
+    <input id="rootTaskInput" placeholder="新しいタスクを追加">
+    <button id="rootTaskAddBtn">追加</button>
+    <ul id="taskList"></ul>
+
+  <!-- メモ欄のモーダル -->
+  <div id="memoModal" class="modal">
+    <div class="modal-content">
+      <h2 id="memoTitle"></h2>
+      <textarea id="memoTextarea" maxlength="2000"></textarea>
+      <div class="modal-buttons">
+        <button id="memoSaveBtn">保存</button>
+        <button id="memoCloseBtn">閉じる</button>
+      </div>
+    </div>
+  </div>
+  <!-- メモ欄のモーダル ここまで -->
+
+  <!-- カラーパレット-->
+  <div id="colorPicker" class="color-picker">
+    <div data-color="#ff6b6b"></div>
+    <div data-color="#ffa94d"></div>
+    <div data-color="#ffd43b"></div>
+    <div data-color="#69db7c"></div>
+    <div data-color="#4dabf7"></div>
+    <div data-color="#9775fa"></div>
+    <input id="rInput" type="number" min="0" max="255" placeholder="R">
+    <input id="gInput" type="number" min="0" max="255" placeholder="G">
+    <input id="bInput" type="number" min="0" max="255" placeholder="B">
+    <div id="colorPreview" class="color-preview"></div>
+    <div class="color-clear">c</div>
+  </div>
+  <!-- カラーパレット ここまで-->
+ <script src="..\static\app.js"></script>
+</body>
+</html>

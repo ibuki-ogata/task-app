@@ -182,19 +182,6 @@ def update_task_done(task_id):
 
     return jsonify({"id": task_id, "done": bool(done)})
 
-@app.put("/subtasks/<int:subtask_id>/done")
-def update_subtask_done(subtask_id):
-    data = request.json
-    done = 1 if data.get("done") else 0
-
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
-    cur.execute("UPDATE subtasks SET done = ? WHERE id = ?", (done, subtask_id))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"id": subtask_id, "done": bool(done)})
-
 @app.delete("/tasks/<int:task_id>")
 def delete_task(task_id):
     conn = sqlite3.connect(DB_NAME)
@@ -214,19 +201,6 @@ def delete_task(task_id):
     conn.close()
 
     return jsonify({"deleted": task_id})
-
-@app.delete("/subtasks/<int:subtask_id>")
-def delete_subtask(subtask_id):
-    conn = sqlite3.connect(DB_NAME)
-    cur = conn.cursor()
-
-    cur.execute("DELETE FROM subtasks WHERE id = ?", (subtask_id,))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"deleted": subtask_id})
-
 
 @app.put("/tasks/<int:task_id>/title")
 def update_task_title(task_id):
@@ -353,6 +327,51 @@ def update_fold_state():
     conn.commit()
 
     return jsonify({"status": "OK"})
+
+@app.route("/restore_tree", methods=["POST"])
+def restore_tree():
+    data = request.json
+    tree = data.get("tree")
+    conn = get_db()
+
+    # 新旧のidの対応
+    id_map = {} 
+
+    # 復元するおおもとのタスクだけは元のparent_id
+    root_parent_id = tree.get("parent_id")
+
+    new_root_id = restore_node(conn, tree, id_map, parent_new_id=root_parent_id, is_root = True)
+    conn.commit()
+    return jsonify({"status": "ok", "restored_root_id": new_root_id})
+
+def restore_node(conn, node, id_map, parent_new_id, is_root=False):
+    # 親タスクの復元
+    #Undoした際は折り畳みを強制展開
+    folded = 0
+
+    cur = conn.execute(
+        """
+        INSERT INTO tasks (title, parent_id, color, folded, done, notes , position)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            node["title"],
+            parent_new_id,
+            node.get("color"),
+            folded, 
+            node.get("done", 0),
+            node.get("note", ""),
+            node.get("position", 0)
+        )
+    )
+    new_id = cur.lastrowid
+    id_map[node["id"]] = new_id
+
+    # 子タスクの再帰的復元
+    for child in node.get("children", []):
+        restore_node(conn,child,id_map, parent_new_id=new_id, is_root=False)
+
+    return new_id
 
 def open_browser():
     webbrowser.open("http://127.0.0.1:5000")

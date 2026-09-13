@@ -1,5 +1,7 @@
 const API_URL = "http://127.0.0.1:5000";
 let lastFocusedAddInputId = null;
+let lastDeleteTree = null;
+let undoTimer = null;
 
 document.getElementById("rootTaskAddBtn").onclick = () => {
     const input = document.getElementById("rootTaskInput");
@@ -11,6 +13,26 @@ document.getElementById("rootTaskAddBtn").onclick = () => {
     input.value = "";
     input.focus();
 };
+
+document.getElementById("undoBtn").onclick = async () => {
+    if (!lastDeleteTree) {
+        return;
+    }
+
+    // バックエンドで復元処理
+    await fetch("/restore_tree", {
+        method: "POST",
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ tree: lastDeleteTree})
+    });
+
+    // UIの更新
+    lastDeleteTree = null;
+    document.getElementById("undoBar").style.display = "none";
+
+    // 再描画
+    await loadTasks();
+}
 
 const rootInput = document.getElementById("rootTaskInput");
 rootInput.addEventListener("keydown", (e) => {
@@ -165,8 +187,13 @@ function renderTask(task, parentColor = null, container) {
     const delBtn = document.createElement("button");
     delBtn.classList.add("delete-btn");
     delBtn.textContent = "🗑";
-    delBtn.onclick = () => {
-        deleteTask(task.id);
+    delBtn.onclick = async () => {
+        // サブツリーに削除対象を保存
+        lastDeleteTree = task;
+        //削除処理
+        await deleteTask(task.id);
+        // undoバー表示
+        showUndoBar(`「${task.title}」を削除しました`);
     }
 
     // メモボタン
@@ -371,6 +398,22 @@ function renderTask(task, parentColor = null, container) {
     } else {
         subList.style.display = "block";
         toggleBtn.classList.add("open");
+    }
+
+    // Undoバー表示の処理
+    function showUndoBar(message) {
+        const bar = document.getElementById("undoBar");
+        const msg = document.getElementById("undoMessage");
+
+        msg.textContent = message;
+        bar.style.display = "flex";
+
+        // 5秒後にバーは削除する
+        clearTimeout(undoTimer);
+        undoTimer = setTimeout(() => {
+            bar.style.display = "none";
+            lastDeleteTree = null; // 完全削除
+        }, 5000);
     }
 
     // タスク追加処理を共通関数化

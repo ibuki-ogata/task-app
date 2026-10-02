@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, g, send_from_directory
+from flask import Flask, request, jsonify, g, render_template
 from flask_cors import CORS, cross_origin
 from threading import Timer
 import sqlite3
@@ -10,10 +10,9 @@ import webview
 import time
 
 def resource_path(relative_path):
-    """ PyInstaller で exe 化した時に正しいパスを返す """
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(relative_path)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 app = Flask(
     __name__,
@@ -70,7 +69,7 @@ def close_db(exception):
 
 @app.route("/")
 def index():
-    return send_from_directory(resource_path("templates"), "index.html")
+    return render_template("index.html")
 
 @app.get("/tasks")
 def get_tasks():
@@ -363,16 +362,12 @@ def start_flask():
 if __name__ == "__main__":
     init_db()
 
-    #Timer(2, open_browser).start()
-    #app.run(debug=True)
-    #app.run()
-
     # Flaskを別スレッドで起動
     flask_thread = threading.Thread(target=start_flask, daemon=True)
     flask_thread.start()
 
     # Flask起動を待つ
-    time.sleep(1)
+    time.sleep(10)
 
     # PyWebView ウィンドウを開く
     window = webview.create_window(

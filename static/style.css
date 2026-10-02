@@ -225,6 +225,16 @@ li {
     background-color: #f0f0f0;
 }
 
-/* .task.done {
-    opacity: 0.4;
-} */
+.undo-bar {
+    display: none;
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    gap: 10px;
+    align-items: center;
+}
